@@ -1,0 +1,45 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Fix Gradle Wrapper and Permissions
+        run: |
+          echo "Checking Gradle wrapper files..."
+          if [ ! -f "./gradlew" ]; then
+            echo "Generating fresh Gradle wrapper..."
+            gradle wrapper --gradle-version 8.5
+          fi
+          chmod +x gradlew
+          ls -la gradlew
+
+      - name: Clean and Build Release APK
+        run: |
+          echo "Starting clean build process..."
+          ./gradlew clean assembleRelease --no-daemon
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: app/build/outputs/apk/release/*.apk
+          
